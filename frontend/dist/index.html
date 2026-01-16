@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Parse Tree Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+  <script type="module" crossorigin src="/assets/index.9bd9d252.js"></script>
+  <link rel="stylesheet" href="/assets/index.7a2ce052.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="5" r="3" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="6" cy="14" r="3" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="18" cy="14" r="3" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8v3M12 11L6 14M12 11L18 14" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <h1>Parse Tree Visualizer</h1>
+            </div>
+            <div class="header-actions">
+                <button id="helpBtn" class="btn btn-ghost">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                    Help
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Input -->
+            <aside class="input-panel">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h2>Grammar</h2>
+                        <button id="loadDefaultBtn" class="btn btn-sm btn-secondary">Load Default</button>
+                    </div>
+                    <div class="textarea-wrapper">
+                        <textarea id="grammarInput" placeholder="E  -> T E'
+E' -> + T E' | ε
+T  -> F T'
+T' -> * F T' | ε
+F  -> ( E ) | number" spellcheck="false"></textarea>
+                    </div>
+                    <div id="grammarStatus" class="status-message"></div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h2>Input String</h2>
+                    </div>
+                    <input type="text" id="inputString" placeholder="e.g., 3 + 5 * 2" />
+                    <div id="tokenDisplay" class="token-display"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="parseBtn" class="btn btn-primary btn-lg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5,3 19,12 5,21 5,3"/>
+                        </svg>
+                        Parse
+                    </button>
+                    <button id="stepBtn" class="btn btn-accent btn-lg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 4v16l7-8-7-8z"/>
+                            <path d="M13 4v16l7-8-7-8z"/>
+                        </svg>
+                        Step Mode
+                    </button>
+                </div>
+
+                <!-- Step Controls (hidden by default) -->
+                <div id="stepControls" class="step-controls hidden">
+                    <div class="step-info">
+                        <span id="stepCounter">Step 0 of 0</span>
+                        <span id="stepDescription"></span>
+                    </div>
+                    <div class="step-buttons">
+                        <button id="prevStepBtn" class="btn btn-sm btn-secondary" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                            Prev
+                        </button>
+                        <button id="nextStepBtn" class="btn btn-sm btn-secondary">
+                            Next
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                        <button id="playPauseBtn" class="btn btn-sm btn-accent">
+                            <svg id="playIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5,3 19,12 5,21 5,3"/>
+                            </svg>
+                            <svg id="pauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden">
+                                <rect x="6" y="4" width="4" height="16"/>
+                                <rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                            Auto
+                        </button>
+                        <button id="resetStepBtn" class="btn btn-sm btn-ghost">Reset</button>
+                    </div>
+                    <div class="speed-control">
+                        <label>Speed:</label>
+                        <input type="range" id="speedSlider" min="100" max="2000" value="500" />
+                        <span id="speedValue">500ms</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Panel: Visualization -->
+            <section class="visualization-panel">
+                <div class="panel-header">
+                    <h2>Parse Tree</h2>
+                    <div class="zoom-controls">
+                        <button id="zoomInBtn" class="btn btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                                <path d="M11 8v6M8 11h6"/>
+                            </svg>
+                        </button>
+                        <button id="zoomOutBtn" class="btn btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                                <path d="M8 11h6"/>
+                            </svg>
+                        </button>
+                        <button id="resetZoomBtn" class="btn btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="treeContainer" class="tree-container">
+                    <div class="empty-state">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <circle cx="12" cy="5" r="2.5"/>
+                            <circle cx="6" cy="13" r="2.5"/>
+                            <circle cx="18" cy="13" r="2.5"/>
+                            <circle cx="3" cy="20" r="2"/>
+                            <circle cx="9" cy="20" r="2"/>
+                            <circle cx="15" cy="20" r="2"/>
+                            <circle cx="21" cy="20" r="2"/>
+                            <path d="M12 7.5v3M12 10.5L6 13M12 10.5L18 13"/>
+                            <path d="M6 15.5L3 18M6 15.5L9 18"/>
+                            <path d="M18 15.5L15 18M18 15.5L21 18"/>
+                        </svg>
+                        <p>Enter a grammar and input string, then click <strong>Parse</strong></p>
+                    </div>
+                    <svg id="treeSvg"></svg>
+                </div>
+                <div id="errorDisplay" class="error-display hidden"></div>
+            </section>
+        </main>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <h2>How to Use Parse Tree Visualizer</h2>
+                <div class="help-content">
+                    <h3>Grammar Format</h3>
+                    <p>Define your grammar using BNF-style rules:</p>
+                    <pre>NonTerminal -> production1 | production2 | ...</pre>
+                    <p>Use <code>ε</code> or <code>epsilon</code> for empty productions.</p>
+                    
+                    <h3>Built-in Terminals</h3>
+                    <ul>
+                        <li><code>number</code> - matches integers and decimals</li>
+                        <li><code>+</code> <code>-</code> <code>*</code> <code>/</code> - arithmetic operators</li>
+                        <li><code>(</code> <code>)</code> - parentheses</li>
+                    </ul>
+                    
+                    <h3>Example Grammar (Arithmetic)</h3>
+                    <pre>E  -> T E'
+E' -> + T E' | - T E' | ε
+T  -> F T'
+T' -> * F T' | / F T' | ε
+F  -> ( E ) | number</pre>
+                    
+                    <h3>Controls</h3>
+                    <ul>
+                        <li><strong>Parse</strong> - Build the complete parse tree instantly</li>
+                        <li><strong>Step Mode</strong> - Watch the tree build node by node</li>
+                        <li>Use scroll wheel or buttons to zoom</li>
+                        <li>Click and drag to pan the tree</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
